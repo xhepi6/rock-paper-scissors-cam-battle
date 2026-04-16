@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server:/app/server
+      - ./client:/app/client
+      - ./package.json:/app/package.json
+      - ./nodemon.json:/app/nodemon.json
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
