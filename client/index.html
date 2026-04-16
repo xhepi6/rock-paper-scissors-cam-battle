@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rock Paper Scissors</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Base Colors */
+      --bg-dark: #0a0a12;
+      --panel-bg: #12121f;
+      --text-primary: #ffffff;
+      --text-secondary: #a0a0b0;
+
+      /* Neon Accents */
+      --neon-cyan: #00f0ff;
+      --neon-magenta: #ff00aa;
+      --neon-yellow: #f0ff00;
+      --neon-green: #00ff66;
+      --neon-red: #ff3366;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Press Start 2P', monospace;
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Main container */
+    .app-container {
+      width: 100%;
+      max-width: 900px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Setup screens container */
+    #setupContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* Game container (hidden during setup) */
+    #gameContainer {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    #gameContainer.active {
+      display: flex;
+    }
+
+    #setupContainer.hidden {
+      display: none;
+    }
+
+    /* Setup panel styling */
+    .setup-panel {
+      background: var(--panel-bg);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+      display: none;
+    }
+
+    .setup-panel.active {
+      display: block;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .setup-header {
+      font-size: 1.2em;
+      margin-bottom: 30px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    /* Progress indicator */
+    .progress-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    .progress-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--panel-bg);
+      border: 2px solid var(--text-secondary);
+      transition: all 0.3s;
+    }
+
+    .progress-dot.active {
+      background: var(--neon-cyan);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    .progress-dot.completed {
+      background: var(--neon-green);
+      border-color: var(--neon-green);
+    }
+
+    /* Form elements */
+    .setup-input {
+      width: 100%;
+      padding: 15px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.9em;
+      background: var(--bg-dark);
+      border: 2px solid var(--text-secondary);
+      border-radius: 4px;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 20px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .setup-input:focus {
+      outline: none;
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    }
+
+    .setup-input.error {
+      border-color: var(--neon-red);
+      box-shadow: 0 0 10px rgba(255, 51, 102, 0.5);
+    }
+
+    .error-message {
+      color: var(--neon-red);
+      font-size: 0.6em;
+      margin-bottom: 15px;
+      min-height: 20px;
+    }
+
+    /* Buttons */
+    .arcade-btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.8em;
+      padding: 15px 30px;
+      background: linear-gradient(180deg, #2a2a4a 0%, #1a1a2e 100%);
+      border: 3px solid var(--neon-cyan);
+      border-radius: 4px;
+      color: var(--text-primary);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      transition: all 0.15s;
+      box-shadow:
+        0 4px 0 #0a0a12,
+        0 0 15px rgba(0, 240, 255, 0.3);
+    }
+
+    .arcade-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow:
+        0 6px 0 #0a0a12,
+        0 0 25px rgba(0, 240, 255, 0.5);
+    }
+
+    .arcade-btn:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow:
+        0 2px 0 #0a0a12,
+        0 0 10px rgba(0, 240, 255, 0.3);
+    }
+
+    .arcade-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .arcade-btn.primary {
+      border-color: var(--neon-green);
+      box-shadow:
+        0 4px 0 #0a0a12,
+        0 0 15px rgba(0, 255, 102, 0.3);
+    }
+
+    .arcade-btn.primary:hover:not(:disabled) {
+      box-shadow:
+        0 6px 0 #0a0a12,
+        0 0 25px rgba(0, 255, 102, 0.5);
+    }
+
+    /* Camera preview */
+    .camera-preview {
+      width: 100%;
+      max-width: 320px;
+      aspect-ratio: 4/3;
+      background: #000;
+      border: 2px solid var(--text-secondary);
+      border-radius: 4px;
+      margin: 20px auto;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .camera-preview video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    .camera-preview.active {
+      border-color: var(--neon-green);
+      box-shadow: 0 0 15px rgba(0, 255, 102, 0.3);
+    }
+
+    /* Progress bar for model loading */
+    .progress-bar-container {
+      width: 100%;
+      height: 30px;
+      background: var(--bg-dark);
+      border: 2px solid var(--text-secondary);
+      border-radius: 4px;
+      margin: 20px 0;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .progress-segment {
+      flex: 1;
+      background: var(--panel-bg);
+      margin: 2px;
+      transition: background 0.3s;
+    }
+
+    .progress-segment.filled {
+      background: var(--neon-cyan);
+      box-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    .progress-text {
+      font-size: 0.6em;
+      color: var(--text-secondary);
+      margin-top: 10px;
+    }
+
+    /* Ready state celebration */
+    .ready-icon {
+      font-size: 4em;
+      margin-bottom: 20px;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    /* Game panel */
+    .game-panel {
+      background: var(--panel-bg);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .player-info {
+      font-size: 0.7em;
+    }
+
+    .player-name {
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    .player-stats {
+      color: var(--text-secondary);
+      font-size: 0.8em;
+      margin-top: 5px;
+    }
+
+    /* Video container in game */
+    #gameVideoContainer {
+      position: relative;
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto 20px;
+    }
+
+    #gameVideoContainer video {
+      width: 100%;
+      border: 2px solid var(--neon-cyan);
+      border-radius: 8px;
+      transform: scaleX(-1);
+    }
+
+    #gameVideoContainer canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform: scaleX(-1);
+      pointer-events: none;
+    }
+
+    /* Gesture display */
+    .gesture-display {
+      text-align: center;
+      padding: 20px;
+      background: var(--bg-dark);
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .gesture-emoji {
+      font-size: 4em;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .gesture-name {
+      font-size: 1em;
+      margin-bottom: 5px;
+    }
+
+    .gesture-confidence {
+      font-size: 0.6em;
+      color: var(--text-secondary);
+    }
+
+    .gesture-confident .gesture-name {
+      color: var(--neon-green);
+      text-shadow: 0 0 10px var(--neon-green);
+    }
+
+    .gesture-locked .gesture-name {
+      color: var(--neon-magenta);
+      text-shadow: 0 0 10px var(--neon-magenta);
+    }
+
+    /* Match info */
+    .match-info {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .match-status {
+      font-size: 0.7em;
+      color: var(--text-secondary);
+    }
+
+    .opponent-name {
+      color: var(--neon-magenta);
+      font-size: 0.8em;
+      margin-top: 5px;
+    }
+
+    /* Game overlays */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 10, 18, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .overlay.hidden {
+      display: none;
+    }
+
+    /* Countdown overlay */
+    .countdown-label {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      color: var(--neon-yellow);
+      text-shadow: 0 0 20px var(--neon-yellow);
+    }
+
+    .countdown-number {
+      font-size: 8em;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 30px var(--neon-cyan);
+      animation: countPulse 1s ease-in-out;
+    }
+
+    @keyframes countPulse {
+      0% { transform: scale(1.5); opacity: 0; }
+      50% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.8; }
+    }
+
+    /* Result overlay */
+    .result-title {
+      font-size: 2em;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    .result-title.win {
+      color: var(--neon-green);
+      text-shadow: 0 0 30px var(--neon-green);
+    }
+
+    .result-title.lose {
+      color: var(--neon-red);
+      text-shadow: 0 0 30px var(--neon-red);
+    }
+
+    .result-title.draw {
+      color: var(--neon-yellow);
+      text-shadow: 0 0 30px var(--neon-yellow);
+    }
+
+    .outcome-message {
+      font-size: 0.8em;
+      color: var(--text-secondary);
+      margin-bottom: 30px;
+    }
+
+    /* Player cards in results */
+    .result-players {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .player-card {
+      background: var(--panel-bg);
+      border: 3px solid var(--text-secondary);
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      width: 200px;
+      position: relative;
+    }
+
+    .player-card.winner {
+      border-color: var(--neon-green);
+      box-shadow: 0 0 20px rgba(0, 255, 102, 0.5);
+      animation: winnerPulse 1s infinite;
+    }
+
+    .player-card.loser {
+      border-color: var(--neon-red);
+      box-shadow: 0 0 15px rgba(255, 51, 102, 0.3);
+    }
+
+    .player-card.draw-card {
+      border-color: var(--neon-yellow);
+      box-shadow: 0 0 15px rgba(240, 255, 0, 0.3);
+    }
+
+    @keyframes winnerPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 102, 0.5); }
+      50% { box-shadow: 0 0 35px rgba(0, 255, 102, 0.8); }
+    }
+
+    .player-card-name {
+      font-size: 0.7em;
+      margin-bottom: 10px;
+      color: var(--neon-cyan);
+    }
+
+    .player-card-snapshot {
+      width: 100%;
+      height: 120px;
+      background: #000;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .player-card-snapshot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .snapshot-placeholder {
+      color: var(--text-secondary);
+      font-size: 3em;
+    }
+
+    .player-card-move {
+      position: absolute;
+      bottom: -15px;
+      right: -15px;
+      width: 50px;
+      height: 50px;
+      background: var(--panel-bg);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5em;
+    }
+
+    .result-scores {
+      font-size: 0.8em;
+      margin-bottom: 30px;
+    }
+
+    /* Result buttons container */
+    .result-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Queue buttons container */
+    .queue-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Leaderboard sidebar */
+    #leaderboardSidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 280px;
+      height: 100vh;
+      background: var(--panel-bg);
+      border-left: 2px solid var(--neon-cyan);
+      padding: 20px;
+      overflow-y: auto;
+      transform: translateX(100%);
+      transition: transform 0.3s;
+      z-index: 50;
+    }
+
+    #leaderboardSidebar.open {
+      transform: translateX(0);
+    }
+
+    .leaderboard-toggle {
+      position: fixed;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--panel-bg);
+      border: 2px solid var(--neon-cyan);
+      border-right: none;
+      border-radius: 8px 0 0 8px;
+      padding: 15px 10px;
+      cursor: pointer;
+      z-index: 51;
+      transition: right 0.3s;
+    }
+
+    .leaderboard-toggle.open {
+      right: 280px;
+    }
+
+    .leaderboard-toggle span {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.6em;
+      color: var(--neon-cyan);
+    }
+
+    .leaderboard-header {
+      font-size: 0.8em;
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--neon-yellow);
+      text-shadow: 0 0 10px var(--neon-yellow);
+    }
+
+    .leaderboard-entry {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: var(--bg-dark);
+      border-radius: 4px;
+      font-size: 0.6em;
+    }
+
+    .leaderboard-entry.you {
+      border: 2px solid var(--neon-cyan);
+      animation: youPulse 2s infinite;
+    }
+
+    @keyframes youPulse {
+      0%, 100% { box-shadow: 0 0 5px var(--neon-cyan); }
+      50% { box-shadow: 0 0 15px var(--neon-cyan); }
+    }
+
+    .leaderboard-rank {
+      width: 30px;
+      font-weight: bold;
+    }
+
+    .leaderboard-rank.gold { color: #ffd700; }
+    .leaderboard-rank.silver { color: #c0c0c0; }
+    .leaderboard-rank.bronze { color: #cd7f32; }
+
+    .leaderboard-name {
+      flex: 1;
+      margin-left: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .leaderboard-stats {
+      text-align: right;
+      color: var(--text-secondary);
+      font-size: 0.9em;
+    }
+
+    .leaderboard-empty {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.6em;
+      padding: 20px;
+    }
+
+    .your-rank {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--text-secondary);
+      font-size: 0.6em;
+      text-align: center;
+      color: var(--neon-cyan);
+    }
+
+    /* Disconnect overlay */
+    .disconnect-message {
+      font-size: 1.2em;
+      margin-bottom: 30px;
+      color: var(--neon-red);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .setup-panel {
+        padding: 20px;
+        margin: 10px;
+      }
+
+      .setup-header {
+        font-size: 0.9em;
+      }
+
+      .arcade-btn {
+        font-size: 0.7em;
+        padding: 12px 20px;
+      }
+
+      .result-players {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .player-card {
+        width: 180px;
+      }
+
+      .countdown-number {
+        font-size: 5em;
+      }
+
+      #leaderboardSidebar {
+        width: 100%;
+      }
+
+      .leaderboard-toggle.open {
+        right: 100%;
+      }
+    }
+
+    /* Desktop leaderboard always visible */
+    @media (min-width: 1200px) {
+      .app-container {
+        margin-right: 280px;
+      }
+
+      #leaderboardSidebar {
+        transform: translateX(0);
+      }
+
+      .leaderboard-toggle {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Setup Container -->
+    <div id="setupContainer">
+      <!-- Progress Indicator -->
+      <div class="progress-indicator">
+        <div class="progress-dot" id="progressDot1"></div>
+        <div class="progress-dot" id="progressDot2"></div>
+        <div class="progress-dot" id="progressDot3"></div>
+      </div>
+
+      <!-- Step 1: Name Entry -->
+      <div class="setup-panel" id="setupName">
+        <h2 class="setup-header">Enter Your Name</h2>
+        <input type="text" class="setup-input" id="nameInput" placeholder="PLAYER NAME" maxlength="12" autocomplete="off">
+        <div class="error-message" id="nameError"></div>
+        <button class="arcade-btn primary" id="submitNameBtn">Continue</button>
+      </div>
+
+      <!-- Step 2: Camera Permission -->
+      <div class="setup-panel" id="setupCamera">
+        <h2 class="setup-header">Activate Scanner</h2>
+        <p style="font-size: 0.6em; color: var(--text-secondary); margin-bottom: 20px;">
+          Camera required for hand gesture detection
+        </p>
+        <div class="camera-preview" id="cameraPreview">
+          <video id="setupVideo" autoplay playsinline muted></video>
+        </div>
+        <div class="error-message" id="cameraError"></div>
+        <button class="arcade-btn primary" id="enableCameraBtn">Enable Camera</button>
+      </div>
+
+      <!-- Step 3: Model Loading -->
+      <div class="setup-panel" id="setupModel">
+        <h2 class="setup-header">Initializing Hand Tracker</h2>
+        <div class="progress-bar-container" id="modelProgressBar">
+          <div class="progress-segment"></div>
+          <div class="progress-segment"></div>
+          <div class="progress-segment"></div>
+          <div class="progress-segment"></div>
+          <div class="progress-segment"></div>
+          <div class="progress-segment"></div>
+          <div class="progress-segment"></div>
+          <div class="progress-segment"></div>
+          <div class="progress-segment"></div>
+          <div class="progress-segment"></div>
+        </div>
+        <p class="progress-text" id="modelStatusText">Downloading model...</p>
+      </div>
+
+      <!-- Step 4: Ready State -->
+      <div class="setup-panel" id="setupReady">
+        <div class="ready-icon">&#x1F3AE;</div>
+        <h2 class="setup-header">Player Ready</h2>
+        <p style="font-size: 0.6em; color: var(--text-secondary); margin-bottom: 20px;">
+          All systems online
+        </p>
+        <button class="arcade-btn primary" id="enterGameBtn">Enter Arcade</button>
+      </div>
+    </div>
+
+    <!-- Game Container -->
+    <div id="gameContainer">
+      <div class="game-panel">
+        <div class="game-header">
+          <div class="player-info">
+            <div class="player-name" id="playerName">PLAYER</div>
+            <div class="player-stats" id="playerStats">W: 0 L: 0</div>
+          </div>
+          <div class="match-info">
+            <div class="match-status" id="matchStatus">Ready to Play</div>
+            <div class="opponent-name" id="opponentName"></div>
+          </div>
+        </div>
+
+        <div id="gameVideoContainer">
+          <video id="gameVideo" autoplay playsinline muted></video>
+          <canvas id="handCanvas"></canvas>
+        </div>
+
+        <div class="gesture-display" id="gestureDisplay">
+          <span class="gesture-emoji" id="gestureEmoji">&#x2753;</span>
+          <div class="gesture-name" id="gestureName">None</div>
+          <div class="gesture-confidence" id="gestureConfidence">Confidence: 0%</div>
+        </div>
+
+        <div class="queue-buttons">
+          <button class="arcade-btn primary" id="joinQueueBtn">Join Queue</button>
+          <button class="arcade-btn" id="cancelQueueBtn" style="display: none;">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaderboard Sidebar -->
+  <button class="leaderboard-toggle" id="leaderboardToggle">
+    <span>SCORES</span>
+  </button>
+  <div id="leaderboardSidebar">
+    <h3 class="leaderboard-header">HIGH SCORES</h3>
+    <div id="leaderboardList">
+      <div class="leaderboard-empty">NO CHALLENGERS YET</div>
+    </div>
+    <div class="your-rank" id="yourRankDisplay" style="display: none;">
+      YOUR RANK: <span id="yourRankNumber">#0</span>
+    </div>
+  </div>
+
+  <!-- Countdown Overlay -->
+  <div id="countdownOverlay" class="overlay hidden">
+    <div class="countdown-label">GET READY!</div>
+    <div class="countdown-number" id="countdownText">3</div>
+  </div>
+
+  <!-- Result Overlay -->
+  <div id="resultOverlay" class="overlay hidden">
+    <div class="result-title" id="resultTitle">YOU WIN!</div>
+    <div class="outcome-message" id="outcomeMessage"></div>
+    <div class="result-players" id="resultPlayers"></div>
+    <div class="result-scores" id="resultScores"></div>
+    <div class="result-buttons">
+      <button class="arcade-btn primary" id="playAgainBtn">Play Again</button>
+      <button class="arcade-btn" id="leaveMatchBtn">Leave Match</button>
+    </div>
+  </div>
+
+  <!-- Disconnect Overlay -->
+  <div id="disconnectOverlay" class="overlay hidden">
+    <div class="disconnect-message">Opponent Disconnected</div>
+    <button class="arcade-btn" id="returnToLobbyBtn">Return to Lobby</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
